@@ -12,14 +12,7 @@ N = 256 # The number of subcarriers
 rho = 0.01 # 1/SNR (30 dB)
 eta = 0.005
 lambda_mse = 1 - eta # weight for MSE between 2 modem/demodem matrices
-D = 2 # The bandwidth reserved
-# transformer parameters
-seq_len = N 
-feature_dim = 2
-'''
-d_model_trans_modu = M * 2
-d_model_trans_demodu = N * 2
-'''
+
 
 # Read datasets from .mat files.
 H_train = mat73.loadmat('H_train.mat') # dimension:N*M
@@ -60,29 +53,7 @@ for (H1,H2) in test_dataloader:
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print(f"Using {device} device") 
 
-'''
-# Define Residual block
-class ResidualBlock(nn.Module):
-    def __init__(self):
-        super(ResidualBlock, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(in_channels=2, out_channels=4, kernel_size=7, padding=3),
-            nn.BatchNorm2d(4),
-            nn.ReLU())
-        self.conv2 = nn.Sequential(nn.Conv2d(in_channels=6, out_channels=2, kernel_size=7, padding=3),
-            nn.BatchNorm2d(2),
-            nn.ReLU())
-        self.conv3 = nn.Sequential(nn.Conv2d(in_channels=8, out_channels=2, kernel_size=7, padding=3),
-            nn.BatchNorm2d(2),
-            nn.ReLU())
 
-    def forward(self, x):
-        output_1 = self.conv1(x)
-        output_1 = torch.cat((output_1,x), dim=1)
-        output_2 = self.conv2(output_1)
-        output_2 = torch.cat((output_2, output_1), dim=1)
-        output_final = self.conv3(output_2)
-        return output_final
-'''
 # Define model
 class moduNetwork(nn.Module):
     def __init__(self):
@@ -223,33 +194,9 @@ def test(dataloader, model, loss_fn, loss_best, epoch_best, epoch_num):
 epochs = 2500
 loss_best = 10
 epoch_best = 0
-train_loss_list=[]
-train_nmse_data_list=[]
-train_nmse_mod_list=[]
-test_loss_list=[]
-test_nmse_data_list=[]
-test_nmse_mod_list=[]
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     train_nmse_data,train_nmse_mod,train_loss=train(train_dataloader, model, loss_fn, optimizer)
-    train_loss_list.append(train_loss)
-    train_nmse_data_list.append(train_nmse_data)
-    train_nmse_mod_list.append(train_nmse_mod)
-    train_loss_arr = np.array(train_loss_list)
-    train_nmse_data_arr = np.array(train_nmse_data_list)
-    train_nmse_mod_arr = np.array(train_nmse_mod_list)
-    scipy.io.savemat("train_loss_epoch.mat", {"train_loss_epoch": train_loss_arr})
-    scipy.io.savemat("train_nmse_data_epoch.mat", {"train_nmse_data_epoch": train_nmse_data_arr})
-    scipy.io.savemat("train_nmse_mod_epoch.mat", {"train_nmse_mod_epoch": train_nmse_mod_arr})
     loss_best,epoch_best,test_nmse_data,test_nmse_mod,test_loss=test(test_dataloader, model, loss_fn, loss_best, epoch_best,t)
-    test_loss_list.append(test_loss)
-    test_nmse_data_list.append(test_nmse_data)
-    test_nmse_mod_list.append(test_nmse_mod)
-    test_loss_arr = np.array(test_loss_list)
-    test_nmse_data_arr = np.array(test_nmse_data_list)
-    test_nmse_mod_arr = np.array(test_nmse_mod_list)
-    scipy.io.savemat("test_loss_epoch.mat", {"test_loss_epoch": test_loss_arr})
-    scipy.io.savemat("test_nmse_data_epoch.mat", {"test_nmse_data_epoch": test_nmse_data_arr})
-    scipy.io.savemat("test_nmse_mod_epoch.mat", {"test_nmse_mod_epoch": test_nmse_mod_arr})
     print(f"The best loss occurs at epoch {epoch_best+1}\n")
 print("Done!")
